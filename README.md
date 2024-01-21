@@ -10,7 +10,7 @@ Recoding the process of 514 Course Project
 ![Idea Sketch](https://github.com/GraceRao/514---Project/blob/main/Sketch%20of%20device.jpg)
 
 **Sensor Device**:
-![Sensor Device](https://github.com/GraceRao/514---Project/blob/main/514%20-%20Sensor.jpg)
+![Sensor Device](https://github.com/GraceRao/514---Project/blob/main/Photos/514%20-%20Sensor.jpg)
 
 **Display Device**:
 ![Display Device](https://github.com/GraceRao/514---Project/blob/main/Photos/514%20-%20Display.jpg)
