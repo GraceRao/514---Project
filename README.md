@@ -13,7 +13,7 @@ Recoding the process of 514 Course Project
 ![Sensor Device](https://github.com/GraceRao/514---Project/blob/main/514%20-%20Sensor.jpg)
 
 **Display Device**:
-![Display Device](https://github.com/GraceRao/514---Project/blob/main/514%20-%20Display.jpg)
+![Display Device](https://github.com/GraceRao/514---Project/blob/main/Photos/514%20-%20Display.jpg)
 
 **How does it work between Sensor and Display Devices**:
 ![S & D Device](https://github.com/GraceRao/514---Project/blob/main/Photos/How%20it%20works%20between%20S%20%26%20D.jpg)
