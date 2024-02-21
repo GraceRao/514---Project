@@ -1,0 +1,33 @@
+#include "BluetoothSerial.h"
+
+#if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
+#error Bluetooth is not enabled! Please run `make menuconfig` to enable it.
+#endif
+
+int button1= D0;
+int button2= D1;
+
+BluetoothSerial ESP_BT; // Create a BluetoothSerial object
+
+const int buttonPin = 0; // The button pin to turn off the LED, adjust according to your actual hardware setup
+bool lastButtonState = HIGH; // The last state of the button, HIGH means not pressed
+
+void setup() {
+  Serial.begin(115200); // Start serial communication
+  pinMode(buttonPin, D0); // Set the button pin as input and enable the internal pull-up resistor
+  ESP_BT.begin("DeviceB"); // Initialize Bluetooth device and set its name to "DeviceB"
+  Serial.println("Device B is ready to pair");
+}
+
+void loop() {
+  bool currentButtonState = digitalRead(buttonPin); // Read the current state of the button
+
+  // Check if the button has been pressed (transition from not pressed to pressed)
+  if (lastButtonState == HIGH && currentButtonState == LOW) {
+    Serial.println("Button pressed. Sending signal to Device A...");
+    ESP_BT.println("turn_off_led"); // Send a signal to Device A to turn off the LED light
+  }
+  lastButtonState = currentButtonState; // Update the last state of the button
+
+  delay(20); // Simple debounce delay
+}
