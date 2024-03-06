@@ -1,0 +1,155 @@
+#include <Arduino.h>
+#include <BLEDevice.h>
+#include <BLEServer.h>
+#include <BLEUtils.h>
+#include <BLE2902.h>
+#include <stdlib.h>
+
+
+
+
+BLEServer* pServer = NULL;
+BLECharacteristic* pCharacteristic = NULL;
+bool deviceConnected = false;
+bool oldDeviceConnected = false;
+unsigned long previousMillis = 0;
+const long interval = 1000;
+
+// TODO: add new global variables for your sensor readings and processed data
+float distance = 20.0; // 设置距离变量并初始化为10
+
+// Define LED pins
+const int ledPinClose = 6; // 当距离大于8且小于16时亮的LED灯的引脚
+const int ledPinFar = 5; // 当距离大于等于16时亮的LED灯的引脚
+
+
+// Define the photoresistor pin
+const int photoResistorPin = A10; // 假设光敏电阻连接到A0引脚
+int lightIntensity; // 用于存储光照强度的变量
+
+
+
+
+// TODO: Change the UUID to your own (any specific one works, but make sure they're different from others'). You can generate one here: https://www.uuidgenerator.net/
+#define SERVICE_UUID        "7d416120-3b50-4969-bedf-f068bedb920b"
+#define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
+
+
+
+
+class MyServerCallbacks : public BLEServerCallbacks {
+  void onConnect(BLEServer* pServer) {
+      deviceConnected = true;
+  };
+
+
+
+
+  void onDisconnect(BLEServer* pServer) {
+      deviceConnected = false;
+  }
+};
+
+
+
+
+// TODO: add DSP algorithm functions here
+
+
+
+
+void setup() {
+  Serial.begin(115200);
+  Serial.println("Starting BLE work!");
+
+
+
+
+  // TODO: add codes for handling your sensor setup (pinMode, etc.)
+
+
+
+
+  // TODO: name your device to avoid conflictions
+  BLEDevice::init("XIAO_ESP32S3");
+  pServer = BLEDevice::createServer();
+  pServer->setCallbacks(new MyServerCallbacks());
+  BLEService *pService = pServer->createService(SERVICE_UUID);
+  pCharacteristic = pService->createCharacteristic(
+      CHARACTERISTIC_UUID,
+      BLECharacteristic::PROPERTY_READ |
+      BLECharacteristic::PROPERTY_WRITE |
+      BLECharacteristic::PROPERTY_NOTIFY
+  );
+  pCharacteristic->addDescriptor(new BLE2902());
+  pCharacteristic->setValue("Connected");
+  pService->start();
+  // BLEAdvertising *pAdvertising = pServer->getAdvertising();  // this still is working for backward compatibility
+  BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
+  pAdvertising->addServiceUUID(SERVICE_UUID);
+  pAdvertising->setScanResponse(true);
+  pAdvertising->setMinPreferred(0x06);  // functions that help with iPhone connections issue
+  pAdvertising->setMinPreferred(0x12);
+  BLEDevice::startAdvertising();
+  Serial.println("Characteristic defined! Now you can read it in your phone!");
+
+  // Initialize LED pins
+  pinMode(ledPinClose, OUTPUT);
+  pinMode(ledPinFar, OUTPUT);
+
+  // Initialize the photoresistor pin as an input
+  pinMode(photoResistorPin, INPUT);
+}
+
+
+
+
+void loop() {
+   // 读取光敏电阻的光照强度
+   lightIntensity = analogRead(photoResistorPin);
+
+
+   if (lightIntensity >= 2600) {
+       // 当光照强度大于等于2600时，设备开始工作
+       if (deviceConnected) {
+           unsigned long currentMillis = millis();
+           if (currentMillis - previousMillis >= interval) {
+               pCharacteristic->setValue("Device is working");
+               pCharacteristic->notify();
+               Serial.println("Device is working");
+               previousMillis = currentMillis; // 更新时间
+           }
+       }
+       // 设备工作逻辑，例如控制LED
+       if (distance > 8 && distance < 16) {
+           digitalWrite(ledPinClose, HIGH);
+           digitalWrite(ledPinFar, LOW);
+       } else if (distance >= 16) {
+           digitalWrite(ledPinClose, LOW);
+           digitalWrite(ledPinFar, HIGH);
+       } else {
+           digitalWrite(ledPinClose, LOW);
+           digitalWrite(ledPinFar, LOW);
+       }
+   } else {
+       // 当光照强度小于2600时，设备不工作
+       digitalWrite(ledPinClose, LOW);
+       digitalWrite(ledPinFar, LOW);
+       Serial.println("Device is not working");
+   }
+
+
+   // 处理BLE设备连接和断开逻辑
+   if (!deviceConnected && oldDeviceConnected) {
+       delay(500);
+       pServer->startAdvertising();
+       Serial.println("Start advertising");
+       oldDeviceConnected = deviceConnected;
+   }
+   if (deviceConnected && !oldDeviceConnected) {
+       oldDeviceConnected = deviceConnected;
+   }
+
+
+   delay(1000);
+}

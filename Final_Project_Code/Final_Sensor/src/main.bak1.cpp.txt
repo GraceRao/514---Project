@@ -1,0 +1,78 @@
+#include <Arduino.h>
+#include <SwitecX25.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+#define STEPS 945
+static int nextPos = 0;
+bool setFlag = false;
+int refreshClk = 0;
+
+#define BUTTON_PIN D8
+#define POT_PIN A9
+
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define OLED_RESET    -1
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+SwitecX25 motor1(STEPS, D0, D1, D2, D3);
+
+void setup(void) {
+  motor1.zero();
+  motor1.setPosition(STEPS/2);
+  motor1.update();
+  delay(1000);
+
+  Wire.begin();
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for (;;);
+  }
+  display.clearDisplay();
+  display.setTextColor(WHITE);
+  display.setTextSize(1);
+  display.setCursor(0,0);
+  display.println("Hello, world!");
+  display.display();
+
+  Serial.begin(9600);
+  Serial.print("Enter a step position from 0 through ");
+  Serial.print(STEPS-1);
+  Serial.println(".");
+
+  pinMode(BUTTON_PIN, INPUT_PULLUP); // Ensure button pin is set correctly
+}
+
+void loop(void) {
+  motor1.update();
+  static int angleIndex = 0;
+  static bool lastButtonState = HIGH; // Assume button is not pressed initially (active-low)
+
+  bool currentButtonState = digitalRead(BUTTON_PIN);
+  if (lastButtonState == HIGH && currentButtonState == LOW) { // Button press detected
+    angleIndex = (angleIndex + 1) % 4; // Cycle through 0, 90, 180, 270 degrees
+    int angles[4] = {0, STEPS/4, STEPS/2, 3*STEPS/4};
+    nextPos = angles[angleIndex];
+    motor1.setPosition(nextPos);
+  }
+  lastButtonState = currentButtonState;
+
+  if (refreshClk == 10) {
+    display.clearDisplay();
+    display.setCursor(0,0);
+    display.print("Angle: ");
+    int anglesDegrees[4] = {0, 90, 180, 270};
+    display.println(anglesDegrees[angleIndex]);
+    display.print("Target: ");
+    display.println(nextPos);
+    display.print("Current: ");
+    display.println(motor1.currentStep);
+    
+    display.display();
+    refreshClk = 0;
+  }
+  refreshClk++;
+  delay(2);
+}
